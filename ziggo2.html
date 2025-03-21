@@ -1,0 +1,101 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Footfy Live</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.12/controls.min.css" crossorigin="anonymous" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.12/shaka-player.ui.min.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://api.shihabtv.xyz/drm/takerestream.css">
+</head>
+<body>
+    <div data-shaka-player-container style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+        <video autoplay muted playsinline data-shaka-player id="video" poster="https://footfy.live/wp-content/uploads/2025/03/Loading-Poster.gif" style="width: 100%; height: 100%;"></video>
+    </div>
+
+    <script>
+        const mpdUrl = 'https://mag03.tvx.prd.tv.odido.nl/wh7f454c46tw266117884_-1972819316/PLTV/86/224/3221241560/3221241560.mpd?accountinfo=~~V2.0~OhA1DF4svOZppKxb-t-Ngw144cce44121c63284a33d5453493e5c8~1_Fmlu5PevHMYnEi9Z_HX2goKAd0VHSuxZMoIcAXcawYvG1meqGp2eQ2Ibhjvh7e59e7f6df3d57f23a32024ad67f0f19dc:UTC,';
+        const kid = '3cfa8625f650406ebf6a4d1ea737f572';
+        const key = '0534e747c70b364aa7210e1bf3191df0';
+
+        let player;
+
+        function initApp() {
+            shaka.polyfill.installAll();
+
+            shaka.Player.probeSupport().then(function() {
+                const video = document.getElementById('video');
+                player = new shaka.Player(video);
+
+                window.player = player;
+
+                const drmConfig = {
+                    drm: {
+                        clearKeys: {
+                            [kid]: key
+                        }
+                    }
+                };
+                player.configure(drmConfig);
+
+                player.load(mpdUrl).then(function() {
+                    console.log('https://t.me/shihab_57!');
+                    video.play().catch(error => console.error('Autoplay failed:', error));
+                }).catch(onPlayerError);
+
+                initializeUI(video);
+            }).catch(onPlayerError);
+        }
+
+        function initializeUI(video) {
+            const container = document.querySelector('[data-shaka-player-container]');
+            const ui = new shaka.ui.Overlay(player, container, video);
+            
+            const uiConfig = {
+                controlPanelElements: [
+                    'play_pause',
+                    'mute',                
+                    'quality',
+                  	'fullscreen',
+                    'overflow_menu',
+                  	'picture_in_picture'
+                    
+                ],
+                overflowMenuButtons: [
+                    'captions',
+                    'playback_rate'
+                ],
+                seekBarColors: {
+                    base: 'rgba(255, 255, 255, 0.3)',
+                    buffered: 'rgba(255, 255, 255, 0.5)',
+                    played: 'rgba(255, 0, 0, 0.8)'
+                }
+            };
+            ui.configure(uiConfig);
+
+            // Auto-select highest quality
+            player.addEventListener('trackschanged', () => {
+                const tracks = player.getVariantTracks();
+                if (tracks.length > 0) {
+                    player.selectVariantTrack(tracks[tracks.length - 1], true);
+                }
+            });
+
+            ui.getControls().setEnabled(true);
+        }
+
+        function onPlayerError(event) {
+            console.error('Player error', event);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            initApp();
+            addDynamicLogo();
+        });
+    </script>
+</body>
+</html>

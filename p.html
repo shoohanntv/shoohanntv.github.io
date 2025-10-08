@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Footfy Live</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+        #myElement {
+            width: 100%;
+            height: 100%;
+        }
+        .error-message {
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+    <script src="https://use.fontawesome.com/20603b964f.js"></script>
+</head>
+<body>
+    <div id="myElement"></div>
+    <div id="error" class="error-message" style="display:none;"></div>
+    
+    <script src="//content.jwplatform.com/libraries/IDzF9Zmk.js"></script>
+    <script type="text/javascript">
+        // Get URL parameter
+        function getParameterByName(name, url = window.location.href) {
+            name = name.replace(/[\[\]]/g, '\\$&');
+            const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+            const results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        // Default stream (if no parameter provided)
+        const defaultStream = "";
+        
+        // Get stream URL from parameter
+        let streamUrl = getParameterByName('p') || defaultStream;
+        
+        // Validate URL
+        function isValidUrl(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        if (!isValidUrl(streamUrl)) {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').innerHTML = 'Invalid stream URL provided';
+            document.getElementById('myElement').style.display = 'none';
+        } else {
+            // Initialize JW Player
+            jwplayer.key = 'ypdL3Acgwp4Uh2/LDE9dYh3W/EPwDMuA2yid4ytssfI=';
+            
+            jwplayer("myElement").setup({
+                file: streamUrl,
+                type: "hls",
+                hlshtml: true,
+                playbackRateControls: [0.75, 1, 1.25, 1.5], 
+                title: 'Live Stream Player', 
+                width: "100%", 
+                height: "100%", 
+                aspectratio: '16:9',
+                repeat: 'true', 
+                autostart: true, 
+                primary: 'html5', 
+                setFullscreen: true, 
+                controls: true, 
+                showCode: true, 
+                responsive: true,
+                abouttext: "GAME24X", 
+                aboutlink: "", 
+                logo: {
+                    file: "https://footfy.net/wp-content/uploads/2024/09/Footfy-Logo-Final.png", 
+                    link: "", 
+                    position: "top-left", 
+                    margin: "5", 
+                    hide: true
+                }, 
+                skin: {
+                    name: "glow", 
+                    active: "red", 
+                    inactive: "", 
+                    background: ""
+                }
+            });
+        }
+    </script>
+    
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4c693d9fcf1445c39b0bc860210542ab","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

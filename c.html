@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Clappr HLS Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Clappr core -->
+  <script src="https://cdn.jsdelivr.net/npm/clappr@latest/dist/clappr.min.js"></script>
+  <!-- Optional: quality/level selector plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/clappr-level-selector-plugin@latest/dist/level-selector.min.js"></script>
+  <!-- Optional: Chromecast support (can remove if not needed) -->
+  <script src="https://cdn.jsdelivr.net/npm/clappr-chromecast-plugin@latest/dist/clappr-chromecast-plugin.min.js"></script>
+
+  <style>
+    html, body { height: 100%; margin: 0; background:#0b0b0b; }
+    #wrap { height: 100%; display: grid; place-items: center; }
+    #player { width: min(100vw, 100%); height: min(56.25vw, 100vh); aspect-ratio: 16 / 9; }
+    #msg { position: fixed; bottom: 12px; left: 12px; right: 12px; color: #eee; font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    a { color: #86c5ff; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="player"></div>
+  </div>
+  <div id="msg"></div>
+
+  <script>
+    // Read ?p=... (or ?src=...) from query string
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      const v = url.searchParams.get(name);
+      return v ? decodeURIComponent(v.trim()) : null;
+    }
+
+    const src = getParam('p') || getParam('src');
+
+    const msgEl = document.getElementById('msg');
+    function say(m) { msgEl.textContent = m || ''; }
+
+    if (!src) {
+      say('No stream URL found. Pass it as ?p=YOUR_M3U8_URL (or ?src=...).');
+    } else {
+      // Basic validation: allow http(s) only
+      try {
+        const u = new URL(src);
+        if (!/^https?:$/.test(u.protocol)) throw new Error('Invalid protocol');
+      } catch (e) {
+        say('Invalid stream URL.');
+      }
+    }
+
+    if (src) {
+      // Create the Clappr player
+      const player = new Clappr.Player({
+        parentId: '#player',
+        source: src,
+        autoPlay: true,       // will attempt autoplay
+        mute: true,           // keep muted to satisfy browser autoplay policies
+        height: '100%',
+        width: '100%',
+        playback: {
+          playInline: true,   // iOS inline
+          hlsjsConfig: {
+            // Tweak for live HLS
+            lowLatencyMode: true,
+            liveSyncDuration: 3,
+            backBufferLength: 30
+          }
+        },
+        plugins: [Clappr.LevelSelector, window.ChromecastPlugin].filter(Boolean),
+        chromecast: { appId: 'CC1AD845' }, // Default media receiver
+        levelSelectorConfig: {
+          title: 'Quality',
+          labels: { 0: 'Auto' },
+          labelCallback: function(playbackLevel, customLabel) {
+            if (customLabel) return customLabel;
+            const h = playbackLevel && playbackLevel.height ? playbackLevel.height + 'p' : '';
+            return h || 'Auto';
+          }
+        }
+      });
+
+      // Helpful player events
+      player.on(Clappr.Events.PLAYER_ERROR, (e) => {
+        console.error('Clappr error:', e);
+        say('Playback error. Make sure the URL is reachable and CORS allows it.');
+      });
+
+      player.on(Clappr.Events.PLAYER_PLAY, () => say(''));
+      player.on(Clappr.Events.PLAYER_PAUSE, () => say('Paused'));
+
+      // Try to unmute after user interaction (for audio)
+      document.addEventListener('click', () => {
+        if (player && player.core && player.core.mediaControl) {
+          try { player.setVolume(100); player.mute(false); } catch(_) {}
+        }
+      }, { once: true });
+    }
+  </script>
+</body>
+</html>

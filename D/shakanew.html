@@ -3,137 +3,172 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Shaka Player — DASH (.mpd) with key1/key2 headers + Poster</title>
-  <!-- Using Shaka Player (compiled) from UNPKG (replace version if needed) -->
+  <title>Embedded Shaka Player — Fullscreen, Center Poster/Logo, Custom Controls</title>
   <script src="https://unpkg.com/shaka-player@4.16.8/dist/shaka-player.compiled.js"></script>
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; display:flex;min-height:100vh;align-items:center;justify-content:center;background:#111;color:#eee;margin:0 }
-    .card{width:min(980px,96%);background:#0f0f10;padding:18px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.6)}
-    video{width:100%;height:auto;border-radius:8px;background:#000}
-    .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-    input[type=text]{flex:1;min-width:220px;padding:8px;border-radius:6px;border:1px solid #222;background:#0b0b0c;color:#eee}
-    button{padding:8px 12px;border-radius:6px;border:none;background:#1f6feb;color:#fff;cursor:pointer}
-    small{opacity:.7}
+    /* Full-bleed container for embedding */
+    :root{--accent:#ff2d7a}
+    html,body{height:100%;margin:0}
+    .embed-wrapper{position:relative;width:100%;height:100vh;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
+
+    video#video{width:100%;height:100%;object-fit:cover;background:#000}
+
+    /* Centered large logo/poster (like your screenshot) */
+    .center-poster{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .center-poster img{max-width:85%;max-height:85%;height:auto;opacity:1;filter:none}
+
+    /* Bottom control bar (overlay) */
+    .controls{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(180deg,rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0.75) 100%)}
+    .btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);padding:8px;border-radius:8px;color:#fff;cursor:pointer}
+    .btn:hover{background:rgba(255,255,255,0.12)}
+    .progress{flex:1;display:flex;align-items:center;gap:8px}
+    .progress input[type=range]{width:100%}
+    .time{min-width:78px;color:#ddd;font-size:13px;text-align:right}
+
+    /* Small top bar for embed label */
+    .topbar{position:absolute;left:12px;top:12px;background:rgba(0,0,0,0.6);padding:8px 12px;border-radius:8px;color:#eee;font-size:13px}
+
+    /* Make sure fullscreen covers parent when embedded in iframe */
+    .fullscreen-active{position:fixed;left:0;top:0;width:100%;height:100%;z-index:99999}
+
+    /* Responsive tweaks */
+    @media (max-width:600px){ .center-poster img{max-width:95%;max-height:70%} .time{display:none} }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Shaka Player — DASH (.mpd) example</h2>
+  <div id="playerContainer" class="embed-wrapper">
+    <!-- Video element (Shaka will attach streams here) -->
+    <video id="video" playsinline webkit-playsinline controls></video>
 
-    <!-- Video element: poster set to the user-provided image -->
-    <video id="video" controls poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQlKKq96zIzlTvzhm0hzs-qi0-Gfskxneo2G0V8TavGi4H0bLHq_nD5rVBZM8ZmMTprSHDmed-LwQ7781_KbEfvE31nzEjZzkFw4csi2vc1FXVx59EnkbGYFuk7zVpnbgLqbIpjrOdQQyx4iA5R6-9avGn871yRZN039cJEup6UswrJcGAY1G_WYeFSjs/s1600/Pleae%20wait%20a%20moment%20%281%29.webp"></video>
-
-    <div class="controls">
-      <input id="manifest" type="text" placeholder="Enter .mpd manifest URL" value="https://abkf7g7aaaaaaaamcmmhhhyli5fwh.otte.live.cf.ww.aiv-cdn.net/pdx-nitro/live/clients/dash/enc/u142pfptsm/out/v1/1caa3b2dfa9e448d8f61209bdfc1acdc/cenc.mpd">
-      <input id="license" type="text" placeholder="License server URL (DRM)" value="https://license-server.example/"> 
-      <input id="key1" type="text" placeholder="key1 value (will be sent as header)" value="REPLACE_KEY1">
-      <input id="key2" type="text" placeholder="key2 value (will be sent as header)" value="REPLACE_KEY2">
-      <button id="loadBtn">Load</button>
-      <button id="unloadBtn">Unload</button>
+    <!-- Centered poster/logo image (data URI embedded) -->
+    <div class="center-poster" id="centerPoster">
+      <img alt="Channel Logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB2wAAAQ3CAYAAAA0W55pAAAAAXNSR0IArs4c6QA...p5nrVVV+9679+57q63WvX2V7UixY3AcJiY+RPjY2HHAmOQozDl4CAdjMrZDsAKM">
     </div>
-    <p><small>Notes: Replace manifest URL, license server and key1/key2 values with your real endpoints. This example attaches <code>key1</code> and <code>key2</code> as HTTP headers to the license request.</small></p>
-    <pre id="log" style="background:#060607;padding:8px;border-radius:6px;color:#cfc;max-height:120px;overflow:auto">Ready.
-</pre>
+
+    <div class="topbar">topstream.space — embedded player</div>
+
+    <div class="controls" id="controls">
+      <button class="btn" id="playPause">Play</button>
+      <button class="btn" id="muteBtn">Mute</button>
+      <div class="progress">
+        <input id="seek" type="range" min="0" max="100" value="0">
+      </div>
+      <div class="time" id="time">0:00 / 0:00</div>
+      <button class="btn" id="pipBtn">PIP</button>
+      <button class="btn" id="fsBtn">Full</button>
+    </div>
   </div>
 
   <script>
     (function(){
       const video = document.getElementById('video');
-      const loadBtn = document.getElementById('loadBtn');
-      const unloadBtn = document.getElementById('unloadBtn');
-      const manifestInput = document.getElementById('manifest');
-      const licenseInput = document.getElementById('license');
-      const key1Input = document.getElementById('key1');
-      const key2Input = document.getElementById('key2');
-      const logEl = document.getElementById('log');
+      const playPause = document.getElementById('playPause');
+      const muteBtn = document.getElementById('muteBtn');
+      const seek = document.getElementById('seek');
+      const timeEl = document.getElementById('time');
+      const pipBtn = document.getElementById('pipBtn');
+      const fsBtn = document.getElementById('fsBtn');
+      const centerPoster = document.getElementById('centerPoster');
+      const playerContainer = document.getElementById('playerContainer');
 
-      function log(...args){
-        console.log(...args);
-        logEl.textContent += '\n' + args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
-        logEl.scrollTop = logEl.scrollHeight;
-      }
-
-      // Shaka Player availability check
-      if (!window.shaka) {
-        log('Shaka Player library not loaded — check the script include.');
-        return;
-      }
-
+      // Shaka setup
+      if (!window.shaka) { console.error('Shaka not loaded'); }
       shaka.polyfill.installAll();
-      if (!shaka.Player.isBrowserSupported()) {
-        log('Browser not supported by Shaka Player.');
-      }
-
       const player = new shaka.Player(video);
+      player.addEventListener('error', e => console.error('Shaka error', e));
 
-      // Optional: attach player events
-      player.addEventListener('error', function(event) {
-        log('Error code', event.detail.code, event.detail); 
-      });
+      // Example manifest — you can replace when embedding
+      const DEFAULT_MANIFEST = 'https://abkf7g7aaaaaaaamcmmhhhyli5fwh.otte.live.cf.ww.aiv-cdn.net/pdx-nitro/live/clients/dash/enc/u142pfptsm/out/v1/1caa3b2dfa9e448d8f61209bdfc1acdc/cenc.mpd';
 
-      // Register a request filter to add 'key1' and 'key2' headers specifically to LICENSE requests.
-      // This ensures the values are sent to the DRM license server.
-      player.getNetworkingEngine().registerRequestFilter(function(type, request) {
-        // RequestType enumeration: see shaka.net.NetworkingEngine.RequestType
+      player.getNetworkingEngine().registerRequestFilter((type, request) => {
         if (type == shaka.net.NetworkingEngine.RequestType.LICENSE) {
-          const k1 = key1Input.value || '7e99f734748d098cbfa2f7bde968dd44';
-          const k2 = key2Input.value || '98ea6088c3222e9abaf61e537804d6cc';
-          if (k1) request.headers['key1'] = k1;
-          if (k2) request.headers['key2'] = k2;
-          // If your license server expects JSON body or custom query params, modify request. 
-          // For example: request.uris[0] = request.uris[0] + '?key1=' + encodeURIComponent(k1);
-          log('Added license headers', {key1: k1 ? '***' : '(empty)', key2: k2 ? '***' : '(empty)'});
+          // Example: if embedding you may want to add custom headers from attributes or query params.
+          // request.headers['key1'] = 'KEY1VALUE';
+          // request.headers['key2'] = 'KEY2VALUE';
         }
       });
 
-      // You can also add request filters for MANIFEST or SEGMENT if needed:
-      // player.getNetworkingEngine().registerRequestFilter((type, request) => {
-      //   if (type == shaka.net.NetworkingEngine.RequestType.MANIFEST) { ... }
-      // });
-
-      // Load function
-      async function load() {
-        const manifest = manifestInput.value.trim();
-        const licenseServer = licenseInput.value.trim();
-        if (!manifest) { log('Please provide a manifest URL.'); return; }
-
-        // Basic DRM server config — map the key system to your license server.
-        const drmConfig = {};
-        if (licenseServer) {
-          // Common example: Widevine (Chrome/Android)
-          drmConfig['com.widevine.alpha'] = licenseServer;
-          // Add PlayReady if needed:
-          // drmConfig['com.microsoft.playready'] = 'https://playready.example/';
-        }
-
-        try {
-          // Apply drm servers config
-          player.configure({drm: {servers: drmConfig}});
+      async function load(manifest=DEFAULT_MANIFEST){
+        try{
           await player.load(manifest);
-          log('Manifest loaded:', manifest);
-        } catch (err) {
-          log('Failed to load manifest or configure DRM:', err);
-        }
+          console.log('Loaded', manifest);
+          // Hide center poster once content is ready to play
+          centerPoster.style.display = 'none';
+        }catch(err){console.error('Load failed',err)}
       }
 
-      // Unload player
-      async function unload() {
-        try {
-          await player.unload();
-          log('Player unloaded.');
-        } catch (err) {
-          log('Unload error:', err);
+      // Basic control bindings
+      playPause.addEventListener('click', ()=>{
+        if (video.paused) video.play(); else video.pause();
+      });
+      video.addEventListener('play', ()=> playPause.textContent='Pause');
+      video.addEventListener('pause', ()=> playPause.textContent='Play');
+
+      muteBtn.addEventListener('click', ()=>{
+        video.muted = !video.muted; muteBtn.textContent = video.muted ? 'Unmute' : 'Mute';
+      });
+
+      // Seek bar
+      video.addEventListener('timeupdate', ()=>{
+        if (!isNaN(video.duration) && video.duration>0) {
+          const pct = (video.currentTime/video.duration)*100;
+          seek.value = pct;
+          timeEl.textContent = formatTime(video.currentTime) + ' / ' + formatTime(video.duration);
         }
+      });
+      seek.addEventListener('input', ()=>{
+        if (!isNaN(video.duration) && video.duration>0) {
+          const t = (seek.value/100)*video.duration; video.currentTime = t;
+        }
+      });
+
+      // Picture-in-Picture
+      pipBtn.addEventListener('click', async ()=>{
+        try{
+          if (document.pictureInPictureElement) await document.exitPictureInPicture();
+          else await video.requestPictureInPicture();
+        }catch(e){console.warn('PIP failed',e)}
+      });
+
+      // Fullscreen toggle that works well when embedded in an iframe
+      fsBtn.addEventListener('click', async ()=>{
+        const el = playerContainer;
+        // If already fullscreen, exit
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+          el.classList.remove('fullscreen-active');
+          fsBtn.textContent = 'Full';
+        } else {
+          // Try to request fullscreen on the container
+          try{ await el.requestFullscreen({navigationUI: 'hide'}); el.classList.add('fullscreen-active'); fsBtn.textContent='Exit'; }
+          catch(e){ console.warn('Fullscreen request failed', e); }
+        }
+      });
+
+      // Utility
+      function formatTime(s){
+        if (isNaN(s) || s===Infinity) return '0:00';
+        const m=Math.floor(s/60); const sec=Math.floor(s%60).toString().padStart(2,'0'); return m+':'+sec;
       }
 
-      loadBtn.addEventListener('click', load);
-      unloadBtn.addEventListener('click', unload);
+      // Auto-load manifest on init (comment out if you want to control externally)
+      load();
 
-      // Auto-load the example manifest on page open (comment out if undesired)
-      // load();
+      // Expose a small API for embedding pages to control the player via postMessage
+      window.addEventListener('message', (ev)=>{
+        // Accept messages from parent that are objects like {type:'load',manifest:'...'}
+        const data = ev.data || {};
+        if (data && data.type==='load' && data.manifest) load(data.manifest);
+        if (data && data.type==='play') video.play();
+        if (data && data.type==='pause') video.pause();
+        if (data && data.type==='setPoster'){
+          // set center poster image; expects data.url
+          if (data.url){ document.querySelector('.center-poster img').src=data.url; document.querySelector('.center-poster').style.display='flex'; }
+        }
+      });
 
-      // Clean up on page unload
-      window.addEventListener('beforeunload', function() { player.destroy(); });
+      // When video ends, show poster again
+      video.addEventListener('ended', ()=>{ document.querySelector('.center-poster').style.display='flex'; });
 
     })();
   </script>

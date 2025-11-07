@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shaka Player — DASH (.mpd) with key1/key2 headers + Poster</title>
+  <!-- Using Shaka Player (compiled) from UNPKG (replace version if needed) -->
+  <script src="https://unpkg.com/shaka-player@4.16.8/dist/shaka-player.compiled.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; display:flex;min-height:100vh;align-items:center;justify-content:center;background:#111;color:#eee;margin:0 }
+    .card{width:min(980px,96%);background:#0f0f10;padding:18px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.6)}
+    video{width:100%;height:auto;border-radius:8px;background:#000}
+    .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    input[type=text]{flex:1;min-width:220px;padding:8px;border-radius:6px;border:1px solid #222;background:#0b0b0c;color:#eee}
+    button{padding:8px 12px;border-radius:6px;border:none;background:#1f6feb;color:#fff;cursor:pointer}
+    small{opacity:.7}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Shaka Player — DASH (.mpd) example</h2>
+
+    <!-- Video element: poster set to the user-provided image -->
+    <video id="video" controls poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQlKKq96zIzlTvzhm0hzs-qi0-Gfskxneo2G0V8TavGi4H0bLHq_nD5rVBZM8ZmMTprSHDmed-LwQ7781_KbEfvE31nzEjZzkFw4csi2vc1FXVx59EnkbGYFuk7zVpnbgLqbIpjrOdQQyx4iA5R6-9avGn871yRZN039cJEup6UswrJcGAY1G_WYeFSjs/s1600/Pleae%20wait%20a%20moment%20%281%29.webp"></video>
+
+    <div class="controls">
+      <input id="manifest" type="text" placeholder="Enter .mpd manifest URL" value="https://abkf7g7aaaaaaaamcmmhhhyli5fwh.otte.live.cf.ww.aiv-cdn.net/pdx-nitro/live/clients/dash/enc/u142pfptsm/out/v1/1caa3b2dfa9e448d8f61209bdfc1acdc/cenc.mpd">
+      <input id="license" type="text" placeholder="License server URL (DRM)" value="https://license-server.example/"> 
+      <input id="key1" type="text" placeholder="key1 value (will be sent as header)" value="REPLACE_KEY1">
+      <input id="key2" type="text" placeholder="key2 value (will be sent as header)" value="REPLACE_KEY2">
+      <button id="loadBtn">Load</button>
+      <button id="unloadBtn">Unload</button>
+    </div>
+    <p><small>Notes: Replace manifest URL, license server and key1/key2 values with your real endpoints. This example attaches <code>key1</code> and <code>key2</code> as HTTP headers to the license request.</small></p>
+    <pre id="log" style="background:#060607;padding:8px;border-radius:6px;color:#cfc;max-height:120px;overflow:auto">Ready.
+</pre>
+  </div>
+
+  <script>
+    (function(){
+      const video = document.getElementById('video');
+      const loadBtn = document.getElementById('loadBtn');
+      const unloadBtn = document.getElementById('unloadBtn');
+      const manifestInput = document.getElementById('manifest');
+      const licenseInput = document.getElementById('license');
+      const key1Input = document.getElementById('key1');
+      const key2Input = document.getElementById('key2');
+      const logEl = document.getElementById('log');
+
+      function log(...args){
+        console.log(...args);
+        logEl.textContent += '\n' + args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      // Shaka Player availability check
+      if (!window.shaka) {
+        log('Shaka Player library not loaded — check the script include.');
+        return;
+      }
+
+      shaka.polyfill.installAll();
+      if (!shaka.Player.isBrowserSupported()) {
+        log('Browser not supported by Shaka Player.');
+      }
+
+      const player = new shaka.Player(video);
+
+      // Optional: attach player events
+      player.addEventListener('error', function(event) {
+        log('Error code', event.detail.code, event.detail); 
+      });
+
+      // Register a request filter to add 'key1' and 'key2' headers specifically to LICENSE requests.
+      // This ensures the values are sent to the DRM license server.
+      player.getNetworkingEngine().registerRequestFilter(function(type, request) {
+        // RequestType enumeration: see shaka.net.NetworkingEngine.RequestType
+        if (type == shaka.net.NetworkingEngine.RequestType.LICENSE) {
+          const k1 = key1Input.value || '7e99f734748d098cbfa2f7bde968dd44';
+          const k2 = key2Input.value || '98ea6088c3222e9abaf61e537804d6cc';
+          if (k1) request.headers['key1'] = k1;
+          if (k2) request.headers['key2'] = k2;
+          // If your license server expects JSON body or custom query params, modify request. 
+          // For example: request.uris[0] = request.uris[0] + '?key1=' + encodeURIComponent(k1);
+          log('Added license headers', {key1: k1 ? '***' : '(empty)', key2: k2 ? '***' : '(empty)'});
+        }
+      });
+
+      // You can also add request filters for MANIFEST or SEGMENT if needed:
+      // player.getNetworkingEngine().registerRequestFilter((type, request) => {
+      //   if (type == shaka.net.NetworkingEngine.RequestType.MANIFEST) { ... }
+      // });
+
+      // Load function
+      async function load() {
+        const manifest = manifestInput.value.trim();
+        const licenseServer = licenseInput.value.trim();
+        if (!manifest) { log('Please provide a manifest URL.'); return; }
+
+        // Basic DRM server config — map the key system to your license server.
+        const drmConfig = {};
+        if (licenseServer) {
+          // Common example: Widevine (Chrome/Android)
+          drmConfig['com.widevine.alpha'] = licenseServer;
+          // Add PlayReady if needed:
+          // drmConfig['com.microsoft.playready'] = 'https://playready.example/';
+        }
+
+        try {
+          // Apply drm servers config
+          player.configure({drm: {servers: drmConfig}});
+          await player.load(manifest);
+          log('Manifest loaded:', manifest);
+        } catch (err) {
+          log('Failed to load manifest or configure DRM:', err);
+        }
+      }
+
+      // Unload player
+      async function unload() {
+        try {
+          await player.unload();
+          log('Player unloaded.');
+        } catch (err) {
+          log('Unload error:', err);
+        }
+      }
+
+      loadBtn.addEventListener('click', load);
+      unloadBtn.addEventListener('click', unload);
+
+      // Auto-load the example manifest on page open (comment out if undesired)
+      // load();
+
+      // Clean up on page unload
+      window.addEventListener('beforeunload', function() { player.destroy(); });
+
+    })();
+  </script>
+</body>
+</html>

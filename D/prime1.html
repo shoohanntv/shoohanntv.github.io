@@ -1,0 +1,33 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Play</title>
+    <script disable-devtool-auto src='https://cdn.jsdelivr.net/npm/disable-devtool'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.1/shaka-player.ui.min.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.1/controls.min.css" crossorigin="anonymous">
+    <style>
+        body { background-color: #000; margin: 0; }
+        .watermark {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 100px;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        img { position:relative; right:130; bottom:10; margin:auto auto; max-width:20%; max-height:20%; object-fit:contain; pointer-events:none; }
+        .shaka-spinner-container { display:none; }
+        .uc { pointer-events:none; }
+        .shaka-current-time, .shaka-time-container { display: none; } /* Hide time display */
+    </style>
+</head>
+<body>
+    <div data-shaka-player-container style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+        <video autoplay data-shaka-player id="video" poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQlKKq96zIzlTvzhm0hzs-qi0-Gfskxneo2G0V8TavGi4H0bLHq_nD5rVBZM8ZmMTprSHDmed-LwQ7781_KbEfvE31nzEjZzkFw4csi2vc1FXVx59EnkbGYFuk7zVpnbgLqbIpjrOdQQyx4iA5R6-9avGn871yRZN039cJEup6UswrJcGAY1G_WYeFSjs/s1600/Pleae%20wait%20a%20moment%20%281%29.webp" style="width:100%; height:100%"></video>
+    </div>
+    <script>
+
+const _0x2130ed=_0x1093;(function(_0x2c8115,_0x4b7125){const _0x2905aa=_0x1093,_0x567a01=_0x2c8115();while(!![]){try{const _0x3ab29e=parseInt(_0x2905aa(0x1e9))/0x1+parseInt(_0x2905aa(0x1e1))/0x2+parseInt(_0x2905aa(0x1e6))/0x3+-parseInt(_0x2905aa(0x1fb))/0x4+-parseInt(_0x2905aa(0x1fd))/0x5*(-parseInt(_0x2905aa(0x1f1))/0x6)+-parseInt(_0x2905aa(0x1f2))/0x7*(-parseInt(_0x2905aa(0x1ee))/0x8)+-parseInt(_0x2905aa(0x1e8))/0x9;if(_0x3ab29e===_0x4b7125)break;else _0x567a01['push'](_0x567a01['shift']());}catch(_0x22f935){_0x567a01['push'](_0x567a01['shift']());}}}(_0x3df8,0xf2a0e));const mpdUrl=_0x2130ed(0x1f6),kid=_0x2130ed(0x1f9),key=_0x2130ed(0x1f3);let player,ui;function initApp(){const _0x48a511=_0x2130ed;shaka[_0x48a511(0x1f5)][_0x48a511(0x1f0)](),shaka[_0x48a511(0x1f4)][_0x48a511(0x1fa)]()[_0x48a511(0x1fc)](function(){const _0x37d37b=_0x48a511,_0x2dae64=document[_0x37d37b(0x1f7)]('video');player=new shaka[(_0x37d37b(0x1f4))](_0x2dae64),window[_0x37d37b(0x1e2)]=player;const _0xf2373b={'drm':{'clearKeys':{[kid]:key}}};player['configure'](_0xf2373b),player[_0x37d37b(0x1ef)](mpdUrl)[_0x37d37b(0x1fc)](function(){const _0xae983b=_0x37d37b;console[_0xae983b(0x1e3)](_0xae983b(0x1fe));})[_0x37d37b(0x1e5)](onPlayerError),initializeUI(_0x2dae64);})['catch'](onPlayerError);}function _0x3df8(){const _0x589bf8=['getControls','30535731AynXds','1227013sPaeIP','Overlay','querySelector','[data-shaka-player-container]','addEventListener','1768HixWYa','load','installAll','1578144TOiNSj','1407AcEaPt','7039b2570d5d429c7f4a7a4058ba5135','Player','polyfill','https://aba3uy3aaaaaaaamfjv2jyrjdxcj4.otte.live.cf.ww.aiv-cdn.net/sin-nitro/live/dash/enc/1xsggbtjku/out/v1/bfd93216daf6417298bfcc7d3015d823/cenc.mpd','getElementById','setEnabled','2f5ed0dd0a0ca671dee3948dbbe023d4','probeSupport','88124fHsmfx','then','5hNoeid','The\x20video\x20has\x20now\x20been\x20loaded!','Player\x20error','DOMContentLoaded','2719558xtmhJd','player','log','error','catch','4543377apmpBj'];_0x3df8=function(){return _0x589bf8;};return _0x3df8();}function initializeUI(_0x7cb91){const _0x35e728=_0x2130ed,_0x713df2=document[_0x35e728(0x1eb)](_0x35e728(0x1ec));ui=new shaka['ui'][(_0x35e728(0x1ea))](player,_0x713df2,_0x7cb91),ui['getControls'](),ui[_0x35e728(0x1e7)]()[_0x35e728(0x1f8)](!![]);}function onPlayerError(_0x38a509){const _0x25cc55=_0x2130ed;console[_0x25cc55(0x1e4)](_0x25cc55(0x1ff),_0x38a509);}function _0x1093(_0x1728d1,_0x2929f7){_0x1728d1=_0x1728d1-0x1e0;const _0x3df846=_0x3df8();let _0x109356=_0x3df846[_0x1728d1];return _0x109356;}document[_0x2130ed(0x1ed)](_0x2130ed(0x1e0),initApp);
+    </script>
+</body>

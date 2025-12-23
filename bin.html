@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+    <script type="text/javascript">
+        aclib.runPop({
+            zoneId: '10586946',
+        });
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BINTV Player</title>
+    <style>
+        /* Reset & fullscreen */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Decoy iframe (visible in DOM, src = about:blank) -->
+<iframe id="videoPlayer" style="display:none;"></iframe>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('id') || !urlParams.has('data')) {
+        document.body.innerHTML = '<p style="color:#fff;text-align:center;font-family:sans-serif;">Video source not found.</p>';
+        return;
+    }
+
+    const encoded = urlParams.get('data');
+    let realUrl;
+    try { realUrl = atob(encoded); }
+    catch (e) {
+        document.body.innerHTML = '<p style="color:#fff;text-align:center;font-family:sans-serif;">Invalid video source.</p>';
+        return;
+    }
+
+    /* --------------------------------------------------------------
+       1. Shadow-DOM host – full-screen, behind the decoy
+       -------------------------------------------------------------- */
+    const shadowHost = document.createElement('div');
+    shadowHost.style.cssText = `
+        position:fixed; top:0; left:0;
+        width:100vw; height:100vh;
+        z-index:1; pointer-events:auto;
+    `;
+    document.body.appendChild(shadowHost);
+
+    const shadow = shadowHost.attachShadow({ mode: 'open' });
+
+    const style = document.createElement('style');
+    style.textContent = `
+        iframe { width:100%; height:100%; border:none; }
+    `;
+    shadow.appendChild(style);
+
+    const realIframe = document.createElement('iframe');
+    realIframe.allowFullscreen = true;
+    realIframe.allow = 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    realIframe.src = realUrl;                 // <-- real stream
+    shadow.appendChild(realIframe);
+
+    /* --------------------------------------------------------------
+       2. Decoy iframe – always shows about:blank
+       -------------------------------------------------------------- */
+    const decoyIframe = document.getElementById('videoPlayer');
+    decoyIframe.src = 'about:blank';
+    decoyIframe.allowFullscreen = true;
+    decoyIframe.allow = realIframe.allow;
+
+    // Override src getter/setter
+    Object.defineProperties(decoyIframe, {
+        src: { get: () => 'about:blank', set: () => {} },
+        contentWindow: { value: null }
+    });
+
+    // Make decoy cover everything but transparent to pointer events
+    decoyIframe.style.cssText = `
+        position:fixed; top:0; left:0;
+        width:100%; height:100%; border:none;
+        pointer-events:none; z-index:2; display:block;
+    `;
+
+    /* --------------------------------------------------------------
+       3. Optional anti-inspect guards
+       -------------------------------------------------------------- */
+    const block = () => {
+        realIframe.src = 'about:blank';
+        setTimeout(() => location.reload(), 100);
+    };
+    window.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('selectstart', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) block();
+    });
+});
+</script>
+
+<!-- Disable DevTools (optional, keep if you like) -->
+<script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+
+</body>
+</html>

@@ -1,26 +1,4 @@
-<?php
 
-$allowedReferers = array(
-"footfy.net",
-"shohantv24.blogspot.com",
-"livestreamlive24.blogspot.com",
-"footfy.site",
-"footfy.space",
-"wxyz"
-
-);
-
-$referer = isset($_SERVER['HTTP_REFERER']) ? parse_url($_SERVER['HTTP_REFERER'], PHP_URL_HOST) : '';
-
-if (in_array($referer, $allowedReferers)) {
-  // this refferer script created by Footfy Live
-
-} else {
-
-    header("Location: http://footfy.net/");
-    exit();
-}
-?>
 
 <head>
     <meta charset="UTF-8">

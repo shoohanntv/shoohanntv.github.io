@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shaka Player - MPD with Key</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+  <style>
+    body {
+      background: #000;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    video {
+      width: 90%;
+      max-width: 900px;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+
+<video
+  id="video"
+  controls
+  autoplay
+  poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQlKKq96zIzlTvzhm0hzs-qi0-Gfskxneo2G0V8TavGi4H0bLHq_nD5rVBZM8ZmMTprSHDmed-LwQ7781_KbEfvE31nzEjZzkFw4csi2vc1FXVx59EnkbGYFuk7zVpnbgLqbIpjrOdQQyx4iA5R6-9avGn871yRZN039cJEup6UswrJcGAY1G_WYeFSjs/s1600/Pleae%20wait%20a%20moment%20%281%29.webp">
+</video>
+
+<script>
+  async function initPlayer() {
+    shaka.polyfill.installAll();
+
+    if (!shaka.Player.isBrowserSupported()) {
+      alert("Browser not supported!");
+      return;
+    }
+
+    const video = document.getElementById('video');
+    const player = new shaka.Player(video);
+
+    player.addEventListener('error', event => {
+      console.error('Shaka Error', event.detail);
+    });
+
+    // 🔑 ClearKey DRM
+    player.configure({
+      drm: {
+        clearKeys: {
+          "0123456789abcdef0123456789abcdef": "abcdef0123456789abcdef0123456789"
+        }
+      }
+    });
+
+    try {
+      await player.load("https://example.com/stream.mpd");
+      console.log("Stream loaded");
+    } catch (e) {
+      console.error("Load error", e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initPlayer);
+</script>
+
+</body>
+</html>

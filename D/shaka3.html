@@ -49,13 +49,13 @@
     player.configure({
       drm: {
         clearKeys: {
-          "0123456789abcdef0123456789abcdef": "abcdef0123456789abcdef0123456789"
+          "065051b99bf5cf8d9a3bde5cbde6aaf9": "214bd176832872339ce184338320f9a2"
         }
       }
     });
 
     try {
-      await player.load("https://example.com/stream.mpd");
+      await player.load("https://ottb.live.cf.ww.aiv-cdn.net/lhr-nitro/live/clients/dash/enc/inpyms8ezu/out/v1/1084d5c9a97a4c5b9f9554c88f486646/cenc.mpd");
       console.log("Stream loaded");
     } catch (e) {
       console.error("Load error", e);

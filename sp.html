@@ -1,38 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Footfy</title>
+  <title>Game24x</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.6/shaka-player.ui.min.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.6/controls.min.css" crossorigin="anonymous">
 
   <style>
-    body { margin:0; background:black; overflow:hidden; }
+    body { margin:0; background:black; }
     .shaka-spinner-container { display: none; }
     .video-fill video { object-fit: cover; }
-    .shaka-bottom-controls { display: flex; flex-direction: column-reverse; }
+
+    .shaka-overflow-menu button:hover { background-color: rgb(45,45,45); }
+    .shaka-overflow-button-label { color: rgb(245,245,245); }
+    .shaka-current-selection-span { color: rgb(202,202,202); }
+
+    .shaka-settings-menu {
+      background-color: rgb(35,35,35);
+      color: #fff;
+    }
+    .shaka-settings-menu button { color: #fff; }
+    .shaka-settings-menu button:hover { background-color: rgb(45,45,45); }
+
+    .shaka-bottom-controls {
+      display: flex;
+      flex-direction: column-reverse;
+    }
 
     a#join-tg span {
-      position:absolute; z-index:100; top:6px; left:5px;
-      height:30px; width:100px;
-      color:#ccc; border:2px solid #ccc;
-      text-align:center; line-height:26px;
-      font-family:sans-serif;
+      position:absolute;
+      z-index:100;
+      top:6px;
+      left:5px;
+      height:30px;
+      width:100px;
+      color:#ccc;
+      border:2px solid #ccc;
+      padding:1px 0;
+      border-radius:2px;
+      text-align:center;
     }
   </style>
 </head>
 
 <body oncontextmenu="return false" onkeydown="return false" onmousedown="return false">
 
-  <div id="videoContainer" class="container video-fill"
+  <div id="videoContainer"
+       class="container video-fill"
        data-shaka-player-container
-       style="position:absolute; top:0; left:0; width:100%; height:100%;">
-       
+       style="position:absolute; z-index:-1; top:0; left:0; width:100%; height:100%;">
+
     <video id="video"
            autoplay
-           controls
            data-shaka-player
-           poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQlKKq96zIzlTvzhm0hzs-qi0-Gfskxneo2G0V8TavGi4H0bLHq_nD5rVBZM8ZmMTprSHDmed-LwQ7781_KbEfvE31nzEjZzkFw4csi2vc1FXVx59EnkbGYFuk7zVpnbgLqbIpjrOdQQyx4iA5R6-9avGn871yRZN039cJEup6UswrJcGAY1G_WYeFSjs/s1600/Pleae%20wait%20a%20moment%20%281%29.webp"
+           poster="https://i.ibb.co/SwbNnBJn/ggg.png"
            style="width:100%; height:100%;">
     </video>
   </div>
@@ -42,6 +63,12 @@
   </a>
 
   <script>
+    function resizePlayer() {
+      const container = document.getElementById('videoContainer');
+      container.style.width = window.innerWidth + 'px';
+      container.style.height = window.innerHeight + 'px';
+    }
+
     async function init() {
       const params = new URLSearchParams(window.location.search);
 
@@ -57,24 +84,31 @@
       const video = document.getElementById('video');
       const ui = video['ui'];
 
-      // UI config
       ui.configure({
         addBigPlayButton: true,
         controlPanelElements: [
-          "play_pause", "time_and_duration", "spacer",
-          "quality", "volume", "fullscreen"
+          "play_pause",
+          "time_and_duration",
+          "spacer",
+          "quality",
+          "volume",
+          "picture_in_picture",
+          "fullscreen"
         ],
         seekBarColors: {
           base: 'rgba(255,255,255,0.3)',
           buffered: 'rgba(255,255,255,0.54)',
           played: 'rgb(255,0,0)'
+        },
+        volumeBarColors: {
+          base: "rgba(66,133,244,0.5)",
+          level: "rgb(66,133,244)"
         }
       });
 
       const controls = ui.getControls();
       const player = controls.getPlayer();
 
-      // DRM config (ClearKey)
       player.configure({
         drm: {
           clearKeys: {
@@ -84,6 +118,7 @@
         streaming: {
           bufferingGoal: 60,
           rebufferingGoal: 2,
+          bufferBehind: 30,
           lowLatencyMode: true
         }
       });
@@ -91,19 +126,18 @@
       try {
         await player.load(mpd);
         await video.play();
-        console.log("Stream loaded");
       } catch (e) {
-        console.error("Playback error", e);
+        console.error("Playback error:", e);
       }
+
+      // Rename settings text (same as original)
+      document.querySelectorAll('.shaka-overflow-menu-button')
+        .forEach(b => b.textContent = 'settings');
     }
 
     document.addEventListener('shaka-ui-loaded', init);
-
-    window.addEventListener('resize', () => {
-      const c = document.getElementById('videoContainer');
-      c.style.width = innerWidth + 'px';
-      c.style.height = innerHeight + 'px';
-    });
+    window.addEventListener('resize', resizePlayer);
+    resizePlayer();
   </script>
 
 </body>

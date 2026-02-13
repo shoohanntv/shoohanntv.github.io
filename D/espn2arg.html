@@ -1,69 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Shaka Player - MPD with Key</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+
+  <title>Footfy</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.6/shaka-player.ui.min.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.6/controls.min.css" crossorigin="anonymous">
+
   <style>
-    body {
-      background: #000;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+    body { margin:0; background:black; }
+
+    .shaka-spinner-container { display: none; }
+    .video-fill video { object-fit: cover; }
+
+    .shaka-overflow-menu button:hover { background-color: rgb(45,45,45); }
+    .shaka-overflow-button-label { color: rgb(245,245,245); }
+    .shaka-current-selection-span { color: rgb(202,202,202); }
+
+    .shaka-settings-menu {
+      background-color: rgb(35,35,35);
+      color: #fff;
     }
-    video {
-      width: 90%;
-      max-width: 900px;
-      background: #000;
+    .shaka-settings-menu button { color: #fff; }
+    .shaka-settings-menu button:hover { background-color: rgb(45,45,45); }
+
+    .shaka-bottom-controls {
+      display: flex;
+      flex-direction: column-reverse;
     }
   </style>
 </head>
-<body>
 
-<video
-  id="video"
-  controls
-  autoplay
-  poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQlKKq96zIzlTvzhm0hzs-qi0-Gfskxneo2G0V8TavGi4H0bLHq_nD5rVBZM8ZmMTprSHDmed-LwQ7781_KbEfvE31nzEjZzkFw4csi2vc1FXVx59EnkbGYFuk7zVpnbgLqbIpjrOdQQyx4iA5R6-9avGn871yRZN039cJEup6UswrJcGAY1G_WYeFSjs/s1600/Pleae%20wait%20a%20moment%20%281%29.webp">
-</video>
+<body oncontextmenu="return false" onkeydown="return false" onmousedown="return false">
 
-<script>
-  async function initPlayer() {
-    shaka.polyfill.installAll();
+  <div id="videoContainer"
+       class="container video-fill"
+       data-shaka-player-container
+       style="position:absolute; top:0; left:0; width:100%; height:100%;">
 
-    if (!shaka.Player.isBrowserSupported()) {
-      alert("Browser not supported!");
-      return;
+    <video id="video"
+           autoplay
+           data-shaka-player
+           poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQlKKq96zIzlTvzhm0hzs-qi0-Gfskxneo2G0V8TavGi4H0bLHq_nD5rVBZM8ZmMTprSHDmed-LwQ7781_KbEfvE31nzEjZzkFw4csi2vc1FXVx59EnkbGYFuk7zVpnbgLqbIpjrOdQQyx4iA5R6-9avGn871yRZN039cJEup6UswrJcGAY1G_WYeFSjs/s1600/Pleae%20wait%20a%20moment%20%281%29.webp"
+           style="width:100%; height:100%;">
+    </video>
+  </div>
+
+  <script>
+    /* ===============================
+       STREAM CONFIG (EDIT HERE)
+    =============================== */
+    const mpdUrl = "https://aca-live1-ott.izzigo.tv/7/out/u/dash/ESPN2HDH265/default.mpd";   // MPD URL
+    const kid    = "faa2d2197cc44dc154650bbacb0dc238";   // KEY ID (hex)
+    const key    = "9859d70c856660e20bbe6896f9cd3048";   // KEY (hex)
+
+    let player;
+    let ui;
+
+    function resizePlayer() {
+      const c = document.getElementById('videoContainer');
+      c.style.width = window.innerWidth + 'px';
+      c.style.height = window.innerHeight + 'px';
     }
 
-    const video = document.getElementById('video');
-    const player = new shaka.Player(video);
+    function initApp() {
+      shaka.polyfill.installAll();
 
-    player.addEventListener('error', event => {
-      console.error('Shaka Error', event.detail);
-    });
-
-    // 🔑 ClearKey DRM
-    player.configure({
-      drm: {
-        clearKeys: {
-          "faa2d2197cc44dc154650bbacb0dc238": "9859d70c856660e20bbe6896f9cd3048"
-        }
+      if (!shaka.Player.isBrowserSupported()) {
+        alert("Browser not supported");
+        return;
       }
-    });
 
-    try {
-      await player.load("https://aca-live1-ott.izzigo.tv/7/out/u/dash/ESPN2HDH265/default.mpd");
-      console.log("Stream loaded");
-    } catch (e) {
-      console.error("Load error", e);
+      const video = document.getElementById('video');
+      player = new shaka.Player(video);
+
+      const drmConfig = {
+        drm: {
+          clearKeys: {
+            [kid]: key
+          }
+        },
+        streaming: {
+          bufferingGoal: 60,
+          rebufferingGoal: 2,
+          bufferBehind: 30,
+          lowLatencyMode: true
+        }
+      };
+
+      player.configure(drmConfig);
+
+      player.load(mpdUrl).then(() => {
+        console.log("Stream loaded");
+        video.play();
+      }).catch(onPlayerError);
+
+      initUI(video);
     }
-  }
 
-  document.addEventListener('DOMContentLoaded', initPlayer);
-</script>
+    function initUI(video) {
+      const container = document.querySelector('[data-shaka-player-container]');
+      ui = new shaka.ui.Overlay(player, container, video);
+
+      ui.configure({
+        addBigPlayButton: true,
+        controlPanelElements: [
+          "play_pause",
+          "time_and_duration",
+          "spacer",
+          "quality",
+          "volume",
+          "picture_in_picture",
+          "fullscreen"
+        ],
+        seekBarColors: {
+          base: 'rgba(255,255,255,0.3)',
+          buffered: 'rgba(255,255,255,0.54)',
+          played: 'rgb(255,0,0)'
+        }
+      });
+
+      ui.getControls().setEnabled(true);
+
+      // Rename overflow label like original
+      document.querySelectorAll('.shaka-overflow-menu-button')
+        .forEach(b => b.textContent = 'settings');
+    }
+
+    function onPlayerError(error) {
+      console.error("Player error:", error);
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+    window.addEventListener('resize', resizePlayer);
+    resizePlayer();
+  </script>
 
 </body>
 </html>

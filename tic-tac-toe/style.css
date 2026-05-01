@@ -1,0 +1,80 @@
+body {
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#0f172a,#1e293b);
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.card {
+  text-align:center;
+}
+
+input {
+  padding:12px;
+  margin:6px;
+  border:none;
+  border-radius:10px;
+  width:200px;
+}
+
+button {
+  padding:12px;
+  margin:5px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(45deg,#22c55e,#4ade80);
+  cursor:pointer;
+}
+
+#board {
+  display:grid;
+  grid-template-columns:repeat(3,100px);
+  gap:12px;
+  justify-content:center;
+  margin:20px;
+}
+
+.cell {
+  width:100px;
+  height:100px;
+  background:#1e293b;
+  border-radius:15px;
+  font-size:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.cell:hover {
+  transform:scale(1.05);
+  background:#334155;
+}
+
+.win {
+  background:#22c55e !important;
+}
+
+#chat {
+  width:260px;
+  margin:auto;
+  background:#111827;
+  padding:10px;
+  border-radius:12px;
+}
+
+#chat-box {
+  height:120px;
+  overflow:auto;
+  text-align:left;
+  margin-bottom:10px;
+}
+
+.quick button {
+  padding:6px;
+}

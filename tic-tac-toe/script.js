@@ -8,166 +8,206 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let mySymbol, myName, room, isMyTurn=false;
+let mySymbol = null;
+let myName = null;
+let room = null;
+let isMyTurn = false;
 
-// BOARD CREATE
+// CREATE BOARD
 const boardDiv = document.getElementById("board");
-for(let i=0;i<9;i++){
-  const d=document.createElement("div");
-  d.className="cell";
-  d.onclick=()=>cellClicked(i);
+for (let i = 0; i < 9; i++) {
+  const d = document.createElement("div");
+  d.className = "cell";
+  d.onclick = () => cellClicked(i);
   boardDiv.appendChild(d);
 }
 
-// JOIN
-function joinRoom(){
-  room = room-input.value.trim();
-  myName = name-input.value.trim();
+// JOIN ROOM
+function joinRoom() {
+  room = document.getElementById("room-input").value.trim();
+  myName = document.getElementById("name-input").value.trim();
 
-  if(!room||!myName) return alert("Enter details");
+  if (!room || !myName) {
+    alert("Enter room and name");
+    return;
+  }
 
-  const ref = db.ref("rooms/"+room);
+  const ref = db.ref("rooms/" + room);
 
-  ref.on("value",snap=>{
-    const d=snap.val();
+  ref.on("value", (snap) => {
+    const data = snap.val();
 
-    if(!d&&!mySymbol){
-      mySymbol="X";
+    if (!data && !mySymbol) {
+      mySymbol = "X";
       ref.set({
-        board:["","","","","","","","",""],
-        turn:"X",
-        p1:myName,
-        p2:null,
-        score:{X:0,O:0,D:0},
-        winner:null,
-        line:[],
-        chat:[]
+        board: ["","","","","","","","",""],
+        turn: "X",
+        p1: myName,
+        p2: null,
+        score: {X:0,O:0,D:0},
+        winner: null,
+        line: [],
+        chat: {}
       });
       return;
     }
 
-    if(d&&!d.p2&&!mySymbol){
-      mySymbol="O";
-      ref.update({p2:myName});
+    if (data && !data.p2 && !mySymbol) {
+      mySymbol = "O";
+      ref.update({ p2: myName });
     }
 
-    if(mySymbol){
-      join-screen.style.display="none";
-      game-screen.style.display="block";
+    if (mySymbol) {
+      document.getElementById("join-screen").style.display = "none";
+      document.getElementById("game-screen").style.display = "block";
     }
 
-    updateUI(d);
-    loadChat(d);
+    updateUI(data);
+    loadChat(data);
   });
 }
 
 // COPY LINK
-function copyLink(){
-  const link=location.origin+location.pathname+"?room="+room-input.value;
+function copyLink() {
+  const roomVal = document.getElementById("room-input").value;
+  const link = location.origin + location.pathname + "?room=" + roomVal;
   navigator.clipboard.writeText(link);
-  alert("Copied!");
+  alert("Link copied!");
 }
 
-// UI
-function updateUI(d){
-  if(!d||!d.board) return;
+// UPDATE UI
+function updateUI(data) {
+  if (!data || !data.board) return;
 
-  const cells=document.querySelectorAll(".cell");
-  cells.forEach(c=>c.classList.remove("win"));
+  const cells = document.querySelectorAll(".cell");
 
-  d.board.forEach((v,i)=>cells[i].innerText=v);
+  cells.forEach(c => c.classList.remove("win"));
 
-  if(d.line) d.line.forEach(i=>cells[i].classList.add("win"));
+  data.board.forEach((val, i) => {
+    if (cells[i]) cells[i].innerText = val;
+  });
 
-  isMyTurn=d.turn===mySymbol&&!d.winner;
+  if (data.line) {
+    data.line.forEach(i => cells[i].classList.add("win"));
+  }
 
-  player-status.innerText=`${d.p1} vs ${d.p2||"Waiting"}`;
-  turn-display.innerText=isMyTurn?"Your Turn":"Waiting";
+  isMyTurn = data.turn === mySymbol && !data.winner;
 
-  p1-score.innerText=`${d.p1}: ${d.score.X}`;
-  p2-score.innerText=`${d.p2||"Waiting"}: ${d.score.O}`;
-  draw-score.innerText=`Draw: ${d.score.D}`;
+  document.getElementById("player-status").innerText =
+    `${data.p1} vs ${data.p2 || "Waiting"}`;
 
-  if(d.winner){
-    winSound.play();
-    round-result.innerText=
-      d.winner==="D"?"Draw!":
-      `${d.winner==="X"?d.p1:d.p2} won`;
+  document.getElementById("turn-display").innerText =
+    data.winner ? "" : (isMyTurn ? "Your Turn" : "Waiting...");
 
-    setTimeout(restartRound,2000);
+  document.getElementById("p1-score").innerText =
+    `${data.p1}: ${data.score?.X || 0}`;
+
+  document.getElementById("p2-score").innerText =
+    `${data.p2 || "Waiting"}: ${data.score?.O || 0}`;
+
+  document.getElementById("draw-score").innerText =
+    `Draw: ${data.score?.D || 0}`;
+
+  if (data.winner) {
+    document.getElementById("round-result").innerText =
+      data.winner === "D" ? "Draw!" :
+      `${data.winner === "X" ? data.p1 : data.p2} won`;
+
+    setTimeout(restartRound, 2000);
   }
 }
 
 // CLICK
-function cellClicked(i){
-  if(!isMyTurn) return;
-  clickSound.play();
+function cellClicked(i) {
+  if (!isMyTurn) return;
 
-  const ref=db.ref("rooms/"+room);
+  const ref = db.ref("rooms/" + room);
 
-  ref.once("value",snap=>{
-    const d=snap.val();
-    if(d.board[i]!=="") return;
+  ref.once("value", (snap) => {
+    const data = snap.val();
 
-    d.board[i]=mySymbol;
-    const r=check(d.board);
+    if (!data || data.board[i] !== "") return;
 
-    let s=d.score;
-    if(r.w==="X")s.X++;
-    else if(r.w==="O")s.O++;
-    else if(r.w==="D")s.D++;
+    data.board[i] = mySymbol;
+
+    const result = checkWinner(data.board);
+
+    let score = data.score || {X:0,O:0,D:0};
+
+    if (result.w === "X") score.X++;
+    else if (result.w === "O") score.O++;
+    else if (result.w === "D") score.D++;
 
     ref.update({
-      board:d.board,
-      turn:mySymbol==="X"?"O":"X",
-      winner:r.w,
-      line:r.l,
-      score:s
+      board: data.board,
+      turn: mySymbol === "X" ? "O" : "X",
+      winner: result.w,
+      line: result.l,
+      score: score
     });
   });
 }
 
 // RESTART
-function restartRound(){
-  db.ref("rooms/"+room).update({
-    board:["","","","","","","","",""],
-    turn:"X",
-    winner:null,
-    line:[]
+function restartRound() {
+  db.ref("rooms/" + room).update({
+    board: ["","","","","","","","",""],
+    turn: "X",
+    winner: null,
+    line: []
   });
 }
 
 // WIN CHECK
-function check(b){
-  const w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  for(let l of w){
-    const[a,b1,c]=l;
-    if(b[a]&&b[a]===b[b1]&&b[a]===b[c]) return {w:b[a],l};
+function checkWinner(board) {
+  const lines = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  for (let l of lines) {
+    const [a,b,c] = l;
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+      return {w: board[a], l};
+    }
   }
-  if(!b.includes("")) return {w:"D",l:[]};
+
+  if (!board.includes("")) return {w:"D",l:[]};
+
   return {w:null,l:[]};
 }
 
 // CHAT
-function sendMessage(){
-  const msg=chat-input.value.trim();
-  if(!msg)return;
+function sendMessage() {
+  const input = document.getElementById("chat-input");
+  const msg = input.value.trim();
+  if (!msg) return;
 
-  db.ref("rooms/"+room+"/chat").push({name:myName,text:msg});
-  chat-input.value="";
+  db.ref("rooms/"+room+"/chat").push({
+    name: myName,
+    text: msg
+  });
+
+  input.value = "";
 }
 
-function sendQuick(t){
-  db.ref("rooms/"+room+"/chat").push({name:myName,text:t});
+function sendQuick(text) {
+  db.ref("rooms/"+room+"/chat").push({
+    name: myName,
+    text: text
+  });
 }
 
-function loadChat(d){
-  if(!d.chat)return;
+function loadChat(data) {
+  if (!data || !data.chat) return;
 
-  chat-box.innerHTML="";
-  Object.values(d.chat).forEach(m=>{
-    const div=document.createElement("div");
-    div.innerText=`${m.name}: ${m.text}`;
-    chat-box.appendChild(div);
+  const box = document.getElementById("chat-box");
+  box.innerHTML = "";
+
+  Object.values(data.chat).forEach(m => {
+    const div = document.createElement("div");
+    div.innerText = `${m.name}: ${m.text}`;
+    box.appendChild(div);
   });
 }
